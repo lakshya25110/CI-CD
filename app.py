@@ -13,9 +13,17 @@ Path('data').mkdir(exist_ok=True)
 
 def get_blog_posts():
     if not BLOG_FILE.exists():
+        with open(BLOG_FILE, 'w') as f:
+            json.dump([], f)
         return []
-    with open(BLOG_FILE) as f:
-        return json.load(f)
+    
+    try:
+        with open(BLOG_FILE) as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        with open(BLOG_FILE, 'w') as f:
+            json.dump([], f)
+        return []
 
 def save_blog_post(title, content):
     posts = get_blog_posts()
@@ -51,6 +59,15 @@ def write_blog():
             return redirect(url_for('blog'))
         flash('Title and content required!', 'error')
     return render_template('write_blog.html')
+
+@app.route('/delete-blog/<int:post_id>', methods=['POST'])
+def delete_blog(post_id):
+    posts = get_blog_posts()
+    posts = [post for post in posts if post['id'] != post_id]
+    with open(BLOG_FILE, 'w') as f:
+        json.dump(posts, f, indent=2)
+    flash('Blog post deleted successfully!', 'success')
+    return redirect(url_for('blog'))
 
 if __name__ == '__main__':
     app.run(debug=True)
